@@ -36,7 +36,7 @@ Ao completar os 20 cartões:
 ## 🔐 Painel do Administrador (Acesso do Professor)
 
 No topo do aplicativo há um botão discreto **"Admin"** protegido por senha.
-- **Senha padrão:** `admin123` *(pode ser personalizada via variável de ambiente `VITE_ADMIN_PASSWORD` na Vercel)*.
+- **Senha de acesso:** Definida via variável de ambiente `VITE_ADMIN_PASSWORD` (ou configurada no arquivo `.env`).
 
 ### Recursos do Painel:
 - **ID baseado na Linha da Planilha:** Cada um dos 113 textos é indexado exatamente pelo número da sua linha no arquivo Excel original (`Sentimentos_textos.xlsx`, linhas 2 a 114).

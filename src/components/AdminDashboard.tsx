@@ -75,11 +75,11 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
     }
   }, [isAuthenticated])
 
-  // Login de Admin (senha padrão admin123 ou VITE_ADMIN_PASSWORD)
+  // Login de Admin
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     const correctPassword =
-      import.meta.env.VITE_ADMIN_PASSWORD || 'admin123'
+      import.meta.env.VITE_ADMIN_PASSWORD || 'Elite2026SA'
     if (password === correctPassword) {
       setIsAuthenticated(true)
       setPasswordError(false)
@@ -238,7 +238,7 @@ export function AdminDashboard({ onBack }: AdminDashboardProps) {
               />
               {passwordError && (
                 <p className="text-xs text-red-500 mt-1 text-left">
-                  Senha incorreta. (Padrão: <code>admin123</code>)
+                  Senha incorreta.
                 </p>
               )}
             </div>
