@@ -5,12 +5,30 @@
 @layer base {
   * {
     -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
   }
 
-  body {
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overscroll-behavior: none;
+    touch-action: none;
+    position: fixed;
+    inset: 0;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     user-select: none;
     -webkit-user-select: none;
+  }
+
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
   }
 }
 

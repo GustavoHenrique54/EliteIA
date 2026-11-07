@@ -30,12 +30,21 @@ interface TinderCardProps {
   isTop: boolean
   index: number
   total: number
+  activeDirection?: 'left' | 'right' | null
 }
 
-function TinderCard({ item, onSwipe, isTop, index, total }: TinderCardProps) {
+function TinderCard({
+  item,
+  onSwipe,
+  isTop,
+  index,
+  total,
+  activeDirection,
+}: TinderCardProps) {
   const x = useMotionValue(0)
   const rotate = useTransform(x, [-250, 250], [-18, 18])
   const opacity = useTransform(x, [-350, -150, 0, 150, 350], [0, 1, 1, 1, 0])
+  const [swipedDir, setSwipedDir] = useState<'left' | 'right' | null>(null)
 
   // Indicadores visuais de carimbo (stamp)
   const iaStampOpacity = useTransform(x, [-160, -30], [1, 0])
@@ -45,18 +54,36 @@ function TinderCard({ item, onSwipe, isTop, index, total }: TinderCardProps) {
   const humanStampScale = useTransform(x, [30, 160], [0.8, 1.1])
 
   const handleDragEnd = (_: any, info: any) => {
-    const swipeThreshold = 80
-    const velocityThreshold = 350
+    const swipeThreshold = 65
+    const velocityThreshold = 300
 
     if (info.offset.x < -swipeThreshold || info.velocity.x < -velocityThreshold) {
+      setSwipedDir('left')
       onSwipe('IA')
     } else if (info.offset.x > swipeThreshold || info.velocity.x > velocityThreshold) {
+      setSwipedDir('right')
       onSwipe('Humano')
     }
   }
 
+  const exitDirection = swipedDir || activeDirection || (x.get() < 0 ? 'left' : 'right')
+
   return (
     <motion.div
+      custom={exitDirection}
+      variants={{
+        initial: { scale: 0.95, y: 15, opacity: 0 },
+        animate: { scale: 1, y: 0, opacity: 1 },
+        exit: (dir: string) => ({
+          x: dir === 'left' ? -550 : 550,
+          rotate: dir === 'left' ? -25 : 25,
+          opacity: 0,
+          transition: { duration: 0.25, ease: 'easeOut' },
+        }),
+      }}
+      initial="initial"
+      animate="animate"
+      exit="exit"
       style={{
         x: isTop ? x : 0,
         rotate: isTop ? rotate : 0,
@@ -64,19 +91,12 @@ function TinderCard({ item, onSwipe, isTop, index, total }: TinderCardProps) {
         zIndex: total - index,
       }}
       drag={isTop ? 'x' : false}
+      dragDirectionLock
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.7}
+      dragElastic={0.65}
       onDragEnd={handleDragEnd}
-      initial={{ scale: 0.95, y: 15, opacity: 0 }}
-      animate={{ scale: 1, y: 0, opacity: 1 }}
-      exit={{
-        x: x.get() < 0 ? -450 : 450,
-        rotate: x.get() < 0 ? -25 : 25,
-        opacity: 0,
-        transition: { duration: 0.25, ease: 'easeOut' },
-      }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-      className={`absolute inset-0 w-full h-full bg-white rounded-3xl p-6 sm:p-7 flex flex-col justify-between 
+      className={`absolute inset-0 w-full h-full bg-white rounded-3xl p-5 sm:p-7 flex flex-col justify-between 
         shadow-[0_15px_40px_-10px_rgba(0,0,0,0.08),0_0_1px_1px_rgba(0,0,0,0.06)] border border-zinc-100 
         cursor-grab active:cursor-grabbing select-none overflow-hidden touch-none`}
     >
@@ -149,6 +169,7 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState<VoteRecord[]>([])
   const [copied, setCopied] = useState(false)
+  const [lastDirection, setLastDirection] = useState<'left' | 'right' | null>(null)
 
   // Iniciar nova rodada com 20 cards (9 humanos, 6 IA, 5 IA fingindo)
   const startNewGame = useCallback(() => {
@@ -156,12 +177,14 @@ export default function App() {
     setCards(roundCards)
     setCurrentIndex(0)
     setAnswers([])
+    setLastDirection(null)
     setGameState('playing')
   }, [])
 
   // Registrar voto
   const handleVote = useCallback(
     async (choice: 'IA' | 'Humano') => {
+      setLastDirection(choice === 'IA' ? 'left' : 'right')
       if (currentIndex >= cards.length) return
 
       const currentCard = cards[currentIndex]
@@ -308,9 +331,9 @@ Você consegue distinguir? 💭`
   }
 
   return (
-    <div className="min-h-[100dvh] w-full flex flex-col justify-between items-center bg-[#F7F7F8] px-4 py-4 select-none text-zinc-900">
+    <div className="fixed inset-0 h-[100dvh] w-full flex flex-col justify-between items-center bg-[#F7F7F8] px-4 py-2.5 sm:py-4 select-none text-zinc-900 overflow-hidden touch-none">
       {/* Top Header */}
-      <header className="w-full max-w-sm flex items-center justify-between py-2">
+      <header className="w-full max-w-sm flex items-center justify-between py-1.5 shrink-0">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-zinc-900 text-white flex items-center justify-center font-bold text-xs tracking-tight">
             VS
@@ -332,28 +355,28 @@ Você consegue distinguir? 💭`
       </header>
 
       {/* Main Container */}
-      <main className="w-full max-w-sm flex-1 flex flex-col justify-center items-center my-auto">
+      <main className="w-full max-w-sm flex-1 flex flex-col justify-center items-center my-auto overflow-hidden">
         {/* TELA DE INTRO */}
         {gameState === 'intro' && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="w-full bg-white rounded-3xl p-6 sm:p-7 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.06)] border border-zinc-100 flex flex-col text-center"
+            className="w-full bg-white rounded-3xl p-5 sm:p-7 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.06)] border border-zinc-100 flex flex-col text-center max-h-[85dvh] overflow-y-auto overscroll-contain touch-pan-y"
           >
-            <div className="w-13 h-13 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-4 text-zinc-800">
-              <BrainCircuit className="w-7 h-7" />
+            <div className="w-12 h-12 sm:w-13 sm:h-13 bg-zinc-100 rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 text-zinc-800 shrink-0">
+              <BrainCircuit className="w-6 h-6 sm:w-7 sm:h-7" />
             </div>
 
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-900 mb-1">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-zinc-900 mb-1">
               O Teste dos Sentimentos
             </h1>
-            <p className="text-xs text-zinc-500 leading-relaxed mb-5">
+            <p className="text-xs text-zinc-500 leading-relaxed mb-4 sm:mb-5">
               Será que a inteligência artificial consegue imitar com perfeição a
               vulnerabilidade humana?
             </p>
 
             {/* Como funciona */}
-            <div className="bg-zinc-50 rounded-2xl p-4 text-left border border-zinc-100/80 mb-5 space-y-2.5">
+            <div className="bg-zinc-50 rounded-2xl p-3.5 sm:p-4 text-left border border-zinc-100/80 mb-4 sm:mb-5 space-y-2.5">
               <div className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 mb-1">
                 Dinâmica da Rodada
               </div>
@@ -392,7 +415,7 @@ Você consegue distinguir? 💭`
 
             <button
               onClick={startNewGame}
-              className="w-full py-4 px-6 bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-white font-semibold rounded-2xl text-sm transition-all shadow-md shadow-zinc-900/10 flex items-center justify-center gap-2"
+              className="w-full py-3.5 sm:py-4 px-6 bg-zinc-900 hover:bg-zinc-800 active:scale-[0.98] text-white font-semibold rounded-2xl text-sm transition-all shadow-md shadow-zinc-900/10 flex items-center justify-center gap-2 shrink-0"
             >
               Iniciar Rodada (20 Cards)
               <ChevronRight className="w-4 h-4" />
@@ -402,9 +425,9 @@ Você consegue distinguir? 💭`
 
         {/* TELA DE JOGO (SWIPE TINDER) */}
         {gameState === 'playing' && (
-          <div className="w-full flex flex-col items-center">
+          <div className="w-full h-full flex flex-col justify-between items-center py-1">
             {/* Barra de Progresso */}
-            <div className="w-full mb-3 px-1">
+            <div className="w-full mb-2 px-1 shrink-0">
               <div className="flex justify-between items-center text-xs font-medium text-zinc-500 mb-1.5">
                 <span>Progresso</span>
                 <span>
@@ -424,8 +447,8 @@ Você consegue distinguir? 💭`
             </div>
 
             {/* Deck de Cards Estilo Tinder */}
-            <div className="relative w-full h-[410px] sm:h-[430px] my-1">
-              <AnimatePresence>
+            <div className="relative w-full flex-1 max-h-[420px] min-h-[300px] h-[390px] sm:h-[420px] my-1 touch-none">
+              <AnimatePresence custom={lastDirection}>
                 {cards
                   .slice(currentIndex, currentIndex + 2)
                   .map((card, idx) => {
@@ -439,6 +462,7 @@ Você consegue distinguir? 💭`
                         isTop={isTop}
                         index={actualIndex}
                         total={TOTAL_CARDS}
+                        activeDirection={lastDirection}
                       />
                     )
                   })}
@@ -446,39 +470,29 @@ Você consegue distinguir? 💭`
             </div>
 
             {/* Botões de Ação Inferiores (Mobile / Desktop) */}
-            <div className="w-full flex items-center justify-center gap-4 mt-5">
+            <div className="w-full flex items-center justify-center gap-3 sm:gap-4 mt-3 mb-1 shrink-0">
               {/* Botão Votar IA */}
               <button
                 onClick={() => handleVote('IA')}
-                className="flex-1 py-3 px-4 bg-white hover:bg-zinc-50 active:scale-95 rounded-2xl border border-zinc-200/90 shadow-[0_4px_12px_rgba(0,0,0,0.04)] flex items-center justify-center gap-2.5 transition-all text-zinc-800 group"
+                className="flex-1 py-3.5 px-4 bg-white hover:bg-zinc-50 active:scale-95 rounded-2xl border border-zinc-200/90 shadow-[0_4px_12px_rgba(0,0,0,0.04)] flex items-center justify-center gap-2.5 transition-all text-zinc-800 group"
                 aria-label="Votar Inteligência Artificial"
               >
-                <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200/80 transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200/80 transition-colors shrink-0">
                   <Bot className="w-4 h-4 text-zinc-700" />
                 </div>
-                <div className="text-left">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">
-                    Esquerda
-                  </div>
-                  <div className="text-sm font-bold leading-tight">É IA</div>
-                </div>
+                <span className="text-sm sm:text-base font-bold leading-tight">É IA</span>
               </button>
 
               {/* Botão Votar Humano */}
               <button
                 onClick={() => handleVote('Humano')}
-                className="flex-1 py-3 px-4 bg-white hover:bg-zinc-50 active:scale-95 rounded-2xl border border-zinc-200/90 shadow-[0_4px_12px_rgba(0,0,0,0.04)] flex items-center justify-center gap-2.5 transition-all text-zinc-800 group"
+                className="flex-1 py-3.5 px-4 bg-white hover:bg-zinc-50 active:scale-95 rounded-2xl border border-zinc-200/90 shadow-[0_4px_12px_rgba(0,0,0,0.04)] flex items-center justify-center gap-2.5 transition-all text-zinc-800 group"
                 aria-label="Votar Humano"
               >
-                <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200/80 transition-colors">
+                <div className="w-8 h-8 rounded-xl bg-zinc-100 flex items-center justify-center group-hover:bg-zinc-200/80 transition-colors shrink-0">
                   <User className="w-4 h-4 text-zinc-700" />
                 </div>
-                <div className="text-left">
-                  <div className="text-[10px] uppercase font-bold tracking-wider text-zinc-400">
-                    Direita
-                  </div>
-                  <div className="text-sm font-bold leading-tight">É Humano</div>
-                </div>
+                <span className="text-sm sm:text-base font-bold leading-tight">É Humano</span>
               </button>
             </div>
           </div>
@@ -489,7 +503,7 @@ Você consegue distinguir? 💭`
           <motion.div
             initial={{ opacity: 0, scale: 0.96 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full bg-white rounded-3xl p-6 sm:p-7 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.06)] border border-zinc-100 flex flex-col text-center max-h-[85vh] overflow-y-auto"
+            className="w-full bg-white rounded-3xl p-5 sm:p-7 shadow-[0_15px_40px_-10px_rgba(0,0,0,0.06)] border border-zinc-100 flex flex-col text-center max-h-[85dvh] overflow-y-auto overscroll-contain touch-pan-y"
           >
             {/* Ícone de Resultado */}
             <div className="w-14 h-14 bg-zinc-100 rounded-3xl flex items-center justify-center mx-auto mb-3 text-zinc-900 border border-zinc-200/60 shadow-inner">
