@@ -10,9 +10,19 @@ export interface FirebaseConfig {
   appId: string
 }
 
+// Configuração padrão vinculada do projeto EliteIA
+export const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
+  apiKey: "AIzaSyBi7SNywUhq5O7TMvJYYNW2qmXYTE0OmpM",
+  authDomain: "eliteia-3b7b6.firebaseapp.com",
+  projectId: "eliteia-3b7b6",
+  storageBucket: "eliteia-3b7b6.firebasestorage.app",
+  messagingSenderId: "694607726010",
+  appId: "1:694607726010:web:9b0053378c18b6e2d48983",
+}
+
 const LOCAL_STORAGE_KEY = 'ia_humano_firebase_config'
 
-export function getStoredFirebaseConfig(): FirebaseConfig | null {
+export function getStoredFirebaseConfig(): FirebaseConfig {
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY)
     if (raw) {
@@ -25,21 +35,17 @@ export function getStoredFirebaseConfig(): FirebaseConfig | null {
     // Ignore error
   }
 
-  // Fallback para variáveis de ambiente Vite (caso configuradas na Vercel)
+  // Fallback para variáveis de ambiente Vite ou a configuração oficial
   const envConfig: FirebaseConfig = {
-    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || '',
-    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || '',
-    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || '',
-    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || '',
-    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-    appId: import.meta.env.VITE_FIREBASE_APP_ID || '',
+    apiKey: import.meta.env.VITE_FIREBASE_API_KEY || DEFAULT_FIREBASE_CONFIG.apiKey,
+    authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || DEFAULT_FIREBASE_CONFIG.authDomain,
+    projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || DEFAULT_FIREBASE_CONFIG.projectId,
+    storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || DEFAULT_FIREBASE_CONFIG.storageBucket,
+    messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || DEFAULT_FIREBASE_CONFIG.messagingSenderId,
+    appId: import.meta.env.VITE_FIREBASE_APP_ID || DEFAULT_FIREBASE_CONFIG.appId,
   }
 
-  if (envConfig.projectId && envConfig.apiKey) {
-    return envConfig
-  }
-
-  return null
+  return envConfig
 }
 
 export function saveFirebaseConfig(config: FirebaseConfig) {
@@ -54,7 +60,7 @@ let dbInstance: Firestore | null = null
 
 export function getDb(): Firestore | null {
   const config = getStoredFirebaseConfig()
-  if (!config) return null
+  if (!config || !config.apiKey || !config.projectId) return null
 
   try {
     const app = getApps().length === 0 ? initializeApp(config) : getApp()
@@ -67,4 +73,3 @@ export function getDb(): Firestore | null {
     return null
   }
 }
-
