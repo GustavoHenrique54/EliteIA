@@ -255,3 +255,4 @@ export function calculateAggregatedStats(sessions: ParticipantSession[]) {
     textStats,
   }
 }
+

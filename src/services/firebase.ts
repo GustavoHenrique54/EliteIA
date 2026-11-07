@@ -67,3 +67,4 @@ export function getDb(): Firestore | null {
     return null
   }
 }
+

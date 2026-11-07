@@ -36,3 +36,4 @@ export function generate20CardRound(): SentimentText[] {
 
   return shuffleArray(combined)
 }
+

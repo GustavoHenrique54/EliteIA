@@ -52,3 +52,4 @@ export interface CategoryStats {
   wrongVotes: number;
   accuracyRate: number;
 }
+
